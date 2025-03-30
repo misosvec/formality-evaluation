@@ -1,13 +1,14 @@
-from google import genai
-from dotenv import load_dotenv
-import os
+import google.generativeai as genai
 
-load_dotenv()
+class Gemini:
+    def __init__(self, model:str, api_key: str) -> None:
+        self.client = genai.GenerativeModel(model_name=model, api_key=api_key)
 
-client = genai.Client(api_key=os.environ['GEMINI_API_KEY'])
-
-response = client.models.generate_content(
-    model="gemini-2.5-pro-exp-03-25", contents="Explain how AI works in a few words"
-)
-print(response.text)
-
+    def run(self, prompt: str, system_prompt: str = "You are a helpful AI assistant.") -> str:
+        response = self.client.generate_content(
+            contents=[
+                {"role": "system", "parts": [{"text": system_prompt}]},  # System message
+                {"role": "user", "parts": [{"text": prompt}]},  # User message
+            ]
+        )
+        return response.text  # Extract response text
