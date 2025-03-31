@@ -6,3 +6,6 @@ transformers
 xgboost
 nltk
 sklearn
+torch
+matplotlib
+seaborn

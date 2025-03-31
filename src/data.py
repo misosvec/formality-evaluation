@@ -6,7 +6,6 @@ from nltk.corpus import stopwords
 from nltk.stem.snowball import SnowballStemmer
 from sklearn.feature_extraction.text import CountVectorizer
 
-
 def read_tsv(file_path):
     return pd.read_csv(file_path, sep='\t', encoding='utf-8', header=None, names=['french', 'english'], on_bad_lines='skip', quoting=3) 
 
@@ -48,32 +47,16 @@ def stem_stop_preprocess(text, language="english"):
     return " ".join(words)
 
 
-def bow_df(df_train, df_test):
-    # Append test after train
+def bow_df(df_train, df_test, lang='english'):
     df = pd.concat([df_train, df_test], ignore_index=True)
+    df[lang] = df[lang].apply(lambda x: stem_stop_preprocess(x, lang))
+
+    vectorizer = CountVectorizer(max_features=1000)
+    bow = vectorizer.fit_transform(df[lang])
+    bow_df = pd.DataFrame(bow.toarray(), columns=vectorizer.get_feature_names_out())
     
-    # Apply preprocessing to 'french' and 'english' columns
-    df["french"] = df["french"].apply(lambda x: stem_stop_preprocess(x, "french"))
-    df["english"] = df["english"].apply(lambda x: stem_stop_preprocess(x, "english"))
-    
-    # Initialize CountVectorizer for both columns
-    vectorizer_french = CountVectorizer(max_features=1000)
-    vectorizer_english = CountVectorizer(max_features=1000)
-    
-    # Fit and transform the text data for 'french' and 'english' columns
-    french_bow = vectorizer_french.fit_transform(df["french"])
-    english_bow = vectorizer_english.fit_transform(df["english"])
-    
-    # Convert the results to DataFrames
-    french_bow_df = pd.DataFrame(french_bow.toarray(), columns=vectorizer_french.get_feature_names_out())
-    english_bow_df = pd.DataFrame(english_bow.toarray(), columns=vectorizer_english.get_feature_names_out())
-    
-    # Concatenate the BoW DataFrames horizontally (along columns)
-    combined_bow_df = pd.concat([french_bow_df, english_bow_df], axis=1)
-    
-    # Split back into train and test sets
-    df_train_bow = combined_bow_df.iloc[:len(df_train)].reset_index(drop=True)
-    df_test_bow = combined_bow_df.iloc[len(df_train):].reset_index(drop=True)
+    df_train_bow = bow_df.iloc[:len(df_train)].reset_index(drop=True)
+    df_test_bow = bow_df.iloc[len(df_train):].reset_index(drop=True)
     
     return df_train_bow, df_test_bow
 
